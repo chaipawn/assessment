@@ -21,7 +21,7 @@ func (tags ExpenseTags) Value() []ExpenseTag {
 }
 
 func NewExpenseTags(tags ...string) ExpenseTags {
-	expense_tags := make([]ExpenseTag, len(tags))
+	expense_tags := make([]ExpenseTag, 0, len(tags))
 	for _, tag := range tags {
 		expense_tags = append(expense_tags, NewExpenseTag(tag))
 	}
