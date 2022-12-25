@@ -1,9 +1,9 @@
-package application_test
+package expense_test
 
 import (
 	"testing"
 
-	"github.com/chaipawn/assessment/application"
+	"github.com/chaipawn/assessment/application/expense"
 	"github.com/chaipawn/assessment/domain"
 )
 
@@ -18,8 +18,8 @@ func (repository *fakeRepository) Create(expense domain.Expense) domain.Expense 
 
 func TestAddExpense(t *testing.T) {
 	repository := &fakeRepository{Expenses: make([]domain.Expense, 0, 1)}
-	handler := application.NewAddExpenseHandler(repository)
-	command := application.NewAddExpenseCommand("strawberry smoothie", 79, "night market promotion discount 10 bath", []string{"food", "beverage"})
+	handler := expense.NewAddExpenseHandler(repository)
+	command := expense.NewAddExpenseCommand("strawberry smoothie", 79, "night market promotion discount 10 bath", []string{"food", "beverage"})
 	expectItemCount := 1
 	expectExpenseId := 1
 
