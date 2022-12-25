@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -35,7 +36,11 @@ func request(method, url string, body io.Reader) *response {
 }
 
 func uri(paths ...string) string {
-	host := "http://localhost:2565"
+	host := os.Getenv("APP_URL")
+	if host == "" {
+		host = "http://localhost:2565"
+	}
+
 	if paths == nil {
 		return host
 	}

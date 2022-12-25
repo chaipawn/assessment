@@ -1,0 +1,10 @@
+.devcontainer/*
+.vscode/*
+.git
+.gitignore
+docker-compose.test.yml
+Dockerfile
+Dockerfile.
+expenses.postman_collection.json
+README.md
+three-way-merge.png
