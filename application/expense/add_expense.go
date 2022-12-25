@@ -24,7 +24,7 @@ func NewAddExpenseHandler(repository persistence.AddExpenseCommandRepository) Ad
 	return AddExpenseHandler{repository: repository}
 }
 
-func (handler AddExpenseHandler) Handle(command AddExpenseCommand) domain.Expense {
+func (handler AddExpenseHandler) Handle(command AddExpenseCommand) (*domain.Expense, error) {
 	expense := domain.NewExpense(
 		domain.NewExpenseId(0),
 		domain.NewExpenseTitle(command.Title),
@@ -32,6 +32,10 @@ func (handler AddExpenseHandler) Handle(command AddExpenseCommand) domain.Expens
 		domain.NewExpenseNote(command.Note),
 		domain.NewExpenseTags(command.Tags...),
 	)
-	newExpense := handler.repository.Create(expense)
-	return newExpense
+	newExpense, err := handler.repository.Create(expense)
+	if err != nil {
+		return nil, err
+	}
+
+	return newExpense, nil
 }

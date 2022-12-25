@@ -11,9 +11,10 @@ type fakeRepository struct {
 	Expenses []domain.Expense
 }
 
-func (repository *fakeRepository) Create(expense domain.Expense) domain.Expense {
+func (repository *fakeRepository) Create(expense domain.Expense) (*domain.Expense, error) {
 	repository.Expenses = append(repository.Expenses, expense)
-	return domain.NewExpense(domain.NewExpenseId(len(repository.Expenses)), expense.Title(), expense.Amount(), expense.Note(), expense.Tags())
+	newExpense := domain.NewExpense(domain.NewExpenseId(len(repository.Expenses)), expense.Title(), expense.Amount(), expense.Note(), expense.Tags())
+	return &newExpense, nil
 }
 
 func TestAddExpense(t *testing.T) {
@@ -23,7 +24,7 @@ func TestAddExpense(t *testing.T) {
 	expectItemCount := 1
 	expectExpenseId := 1
 
-	expense := handler.Handle(command)
+	expense, _ := handler.Handle(command)
 
 	if len(repository.Expenses) != expectItemCount {
 		t.Errorf("expense count in repository expect %d, but got %d", expectItemCount, len(repository.Expenses))
