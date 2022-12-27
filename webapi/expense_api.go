@@ -26,6 +26,28 @@ func (api ExpenseAPI) Shutdown(ctx context.Context) error {
 	return api.app.Shutdown(ctx)
 }
 
+func createExpense(db *sql.DB) func(echo.Context) error {
+	return func(c echo.Context) error {
+		var request CreateExpenseRequest
+		err := c.Bind(&request)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, ErrorResponse{Message: "Bad request"})
+		}
+
+		command := expense.NewAddExpenseCommand(request.Title, request.Amount, request.Note, request.Tags)
+		repository := infrastructure.NewExpenseCommandRepository(db)
+		handler := expense.NewAddExpenseHandler(repository)
+
+		expenseEntity, err := handler.Handle(command)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, ErrorResponse{Message: "Something went wrong"})
+		}
+		response := NewCreateExpenseRespons(*expenseEntity)
+
+		return c.JSON(http.StatusCreated, response)
+	}
+}
+
 func getExpenseById(db *sql.DB) func(echo.Context) error {
 	return func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
@@ -56,26 +78,7 @@ func getExpenseById(db *sql.DB) func(echo.Context) error {
 func NewExpenseAPI(address string, db *sql.DB) ExpenseAPI {
 	e := echo.New()
 
-	e.POST("/expenses", func(c echo.Context) error {
-		var request CreateExpenseRequest
-		err := c.Bind(&request)
-		if err != nil {
-			return c.String(http.StatusBadRequest, "bad request")
-		}
-
-		command := expense.NewAddExpenseCommand(request.Title, request.Amount, request.Note, request.Tags)
-		repository := infrastructure.NewExpenseCommandRepository(db)
-		handler := expense.NewAddExpenseHandler(repository)
-
-		expense, err := handler.Handle(command)
-		if err != nil {
-			return c.String(http.StatusInternalServerError, "internal server error")
-		}
-		response := NewCreateExpenseRespons(*expense)
-
-		return c.JSON(http.StatusCreated, response)
-	})
-
+	e.POST("/expenses", createExpense(db))
 	e.GET("/expenses/:id", getExpenseById(db))
 
 	return ExpenseAPI{app: e, Address: address}
