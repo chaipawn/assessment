@@ -135,6 +135,43 @@ func (repository ExpenseQueryRepository) Read(id domain.ExpenseId) (*domain.Expe
 	return &expense, nil
 }
 
+func (repository ExpenseQueryRepository) ReadAll() ([]domain.Expense, error) {
+	stmt, err := repository.db.Prepare("SELECT id, title, amount, note, tags FROM expenses")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, err
+	}
+
+	expenses := make([]domain.Expense, 0)
+	for rows.Next() {
+		var (
+			id     int
+			title  string
+			amount float64
+			note   string
+			tags   []string
+		)
+		err := rows.Scan(&id, &title, &amount, &note, pq.Array(&tags))
+		if err != nil {
+			return nil, err
+		}
+		expense := domain.NewExpense(
+			domain.NewExpenseId(id),
+			domain.NewExpenseTitle(title),
+			domain.NewExpenseAmount(amount),
+			domain.NewExpenseNote(note),
+			domain.NewExpenseTags(tags...),
+		)
+		expenses = append(expenses, expense)
+	}
+
+	return expenses, nil
+}
+
 func NewExpenseQueryRepository(db *sql.DB) ExpenseQueryRepository {
 	return ExpenseQueryRepository{db: db}
 }

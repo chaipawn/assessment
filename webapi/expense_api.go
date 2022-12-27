@@ -106,9 +106,32 @@ func updateExpense(db *sql.DB) func(echo.Context) error {
 	}
 }
 
+func getAllExpense(db *sql.DB) func(echo.Context) error {
+	return func(c echo.Context) error {
+		query := expense.NewGetAllExpenseQuery()
+		repository := infrastructure.NewExpenseQueryRepository(db)
+		handler := expense.NewGetAllExpenseHandler(repository)
+
+		expenseEntities, err := handler.Handle(query)
+		if err != nil {
+			c.Logger().Error(err)
+			return c.JSON(http.StatusInternalServerError, ErrorResponse{Message: "Something went wrong"})
+		}
+
+		responses := make([]GetExpenseResponse, 0, len(expenseEntities))
+		for _, entity := range expenseEntities {
+			response := NewGetExpenseResponse(entity)
+			responses = append(responses, response)
+		}
+
+		return c.JSON(http.StatusOK, responses)
+	}
+}
+
 func NewExpenseAPI(address string, db *sql.DB) ExpenseAPI {
 	e := echo.New()
 
+	e.GET("/expenses", getAllExpense(db))
 	e.POST("/expenses", createExpense(db))
 	e.GET("/expenses/:id", getExpenseById(db))
 	e.PUT("/expenses/:id", updateExpense(db))

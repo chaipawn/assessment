@@ -212,3 +212,29 @@ func TestAPIUpdateExpenseNotFound(t *testing.T) {
 		t.Errorf("response status code expect %d, but got %d", http.StatusNotFound, rawResponse.StatusCode)
 	}
 }
+
+func TestAPIGetAllExpense(t *testing.T) {
+	body := bytes.NewBufferString(`{
+		"title": "strawberry smoothie",
+		"amount": 79,
+		"note": "night market promotion discount 10 bath", 
+		"tags": ["food", "beverage"]
+	}`)
+
+	_ = request(http.MethodPost, uri("expenses"), body)
+
+	var responses []webapi.GetExpenseResponse
+	rawResponse := request(http.MethodGet, uri("expenses"), bytes.NewBufferString(""))
+	err := rawResponse.Decode(&responses)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rawResponse.StatusCode != http.StatusOK {
+		t.Errorf("response status code expect %d, but got %d", http.StatusOK, rawResponse.StatusCode)
+	}
+
+	if len(responses) < 1 {
+		t.Errorf("expenses count expect greater than 1, but got %d", len(responses))
+	}
+}
