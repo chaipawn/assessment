@@ -1,5 +1,3 @@
-//go:build integration
-
 package webapi_test
 
 import (
@@ -8,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -83,5 +82,62 @@ func TestAPICreateExpense(t *testing.T) {
 		if tag != "food" && tag != "beverage" {
 			t.Errorf("expense tags expect %v but got %s", []string{"food", "beverage"}, tag)
 		}
+	}
+}
+
+func TestAPIGetExpense(t *testing.T) {
+	body := bytes.NewBufferString(`{
+		"title": "strawberry smoothie",
+		"amount": 79,
+		"note": "night market promotion discount 10 bath", 
+		"tags": ["food", "beverage"]
+	}`)
+
+	var responseCreated webapi.CreateExpenseResponse
+	_ = request(http.MethodPost, uri("expenses"), body).Decode(&responseCreated)
+	expectExpenseId := responseCreated.Id
+
+	var response webapi.GetExpenseResponse
+	rawResponse := request(http.MethodGet, uri("expenses", strconv.Itoa(expectExpenseId)), bytes.NewBufferString(""))
+	err := rawResponse.Decode(&response)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rawResponse.StatusCode != http.StatusOK {
+		t.Errorf("response status code expect %d, but got %d", http.StatusOK, rawResponse.StatusCode)
+	}
+
+	if response.Title != "strawberry smoothie" {
+		t.Errorf("expense title expect %s, but got %s", "strawberry smoothie", response.Title)
+	}
+
+	if response.Amount != float64(79) {
+		t.Errorf("expense amount expect %f, but got %f", float64(79), response.Amount)
+	}
+
+	if response.Note != "night market promotion discount 10 bath" {
+		t.Errorf("expense note expect %s, but got %s", "night market promotion discount 10 bath", response.Note)
+	}
+
+	if len(response.Tags) != 2 {
+		t.Errorf("expense tags count expect %d, but got %d", 2, len(response.Tags))
+	}
+
+	for _, tag := range response.Tags {
+		if tag != "food" && tag != "beverage" {
+			t.Errorf("expense tags expect %v but got %s", []string{"food", "beverage"}, tag)
+		}
+	}
+}
+
+func TestAPIGetExpenseNotFound(t *testing.T) {
+	rawResponse := request(http.MethodGet, uri("expenses", "999999999"), bytes.NewBufferString(""))
+	if rawResponse.err != nil {
+		t.Fatal(rawResponse.err)
+	}
+
+	if rawResponse.StatusCode != http.StatusNotFound {
+		t.Errorf("response status code expect %d, but got %d", http.StatusOK, rawResponse.StatusCode)
 	}
 }

@@ -30,6 +30,7 @@ services:
       APP_URL: "http://app:2565"
     depends_on:
       - db
+      - app
     networks:
       - integration-test
 
