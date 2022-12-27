@@ -43,3 +43,42 @@ func (repository ExpenseCommandRepository) Create(expense domain.Expense) (*doma
 func NewExpenseCommandRepository(db *sql.DB) ExpenseCommandRepository {
 	return ExpenseCommandRepository{db: db}
 }
+
+type ExpenseQueryRepository struct {
+	db *sql.DB
+}
+
+func (repository ExpenseQueryRepository) Read(id domain.ExpenseId) (*domain.Expense, error) {
+	stmt, err := repository.db.Prepare("SELECT title, amount, note, tags FROM expenses WHERE id=$1")
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		title  string
+		amount float64
+		note   string
+		tags   []string
+	)
+	err = stmt.QueryRow(id.Value()).Scan(&title, &amount, &note, pq.Array(&tags))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	expense := domain.NewExpense(
+		id,
+		domain.NewExpenseTitle(title),
+		domain.NewExpenseAmount(amount),
+		domain.NewExpenseNote(note),
+		domain.NewExpenseTags(tags...),
+	)
+
+	return &expense, nil
+}
+
+func NewExpenseQueryRepository(db *sql.DB) ExpenseQueryRepository {
+	return ExpenseQueryRepository{db: db}
+}
