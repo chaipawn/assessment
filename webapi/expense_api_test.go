@@ -1,3 +1,5 @@
+//go:build integration
+
 package webapi_test
 
 import (
@@ -138,6 +140,75 @@ func TestAPIGetExpenseNotFound(t *testing.T) {
 	}
 
 	if rawResponse.StatusCode != http.StatusNotFound {
+		t.Errorf("response status code expect %d, but got %d", http.StatusNotFound, rawResponse.StatusCode)
+	}
+}
+
+func TestAPIUpdateExpense(t *testing.T) {
+	createExpenseBody := bytes.NewBufferString(`{
+		"title": "strawberry smoothie",
+		"amount": 79,
+		"note": "night market promotion discount 10 bath", 
+		"tags": ["food", "beverage"]
+	}`)
+
+	var responseCreated webapi.CreateExpenseResponse
+	_ = request(http.MethodPost, uri("expenses"), createExpenseBody).Decode(&responseCreated)
+	expectExpenseId := responseCreated.Id
+
+	updateExpenseBody := bytes.NewBufferString(`{
+		"title": "strawberry smoothie updated",
+		"amount": 88,
+		"note": "night market promotion discount 10 bath updated", 
+		"tags": ["fooded", "beverage", "drink"]
+	}`)
+	var response webapi.GetExpenseResponse
+	rawResponse := request(http.MethodPut, uri("expenses", strconv.Itoa(expectExpenseId)), updateExpenseBody)
+	err := rawResponse.Decode(&response)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rawResponse.StatusCode != http.StatusOK {
 		t.Errorf("response status code expect %d, but got %d", http.StatusOK, rawResponse.StatusCode)
+	}
+
+	if response.Title != "strawberry smoothie updated" {
+		t.Errorf("expense title expect %s, but got %s", "strawberry smoothie updated", response.Title)
+	}
+
+	if response.Amount != float64(88) {
+		t.Errorf("expense amount expect %f, but got %f", float64(88), response.Amount)
+	}
+
+	if response.Note != "night market promotion discount 10 bath updated" {
+		t.Errorf("expense note expect %s, but got %s", "night market promotion discount 10 bath updated", response.Note)
+	}
+
+	if len(response.Tags) != 3 {
+		t.Errorf("expense tags count expect %d, but got %d", 3, len(response.Tags))
+	}
+
+	for _, tag := range response.Tags {
+		if tag != "fooded" && tag != "beverage" && tag != "drink" {
+			t.Errorf("expense tags expect %v but got %v", []string{"fooded", "beverage", "drink"}, response.Tags)
+		}
+	}
+}
+
+func TestAPIUpdateExpenseNotFound(t *testing.T) {
+	updateExpenseBody := bytes.NewBufferString(`{
+		"title": "strawberry smoothie updated",
+		"amount": 88,
+		"note": "night market promotion discount 10 bath updated", 
+		"tags": ["fooded", "beverage", "drink"]
+	}`)
+	rawResponse := request(http.MethodPut, uri("expenses", "999999999"), updateExpenseBody)
+	if rawResponse.err != nil {
+		t.Fatal(rawResponse.err)
+	}
+
+	if rawResponse.StatusCode != http.StatusNotFound {
+		t.Errorf("response status code expect %d, but got %d", http.StatusNotFound, rawResponse.StatusCode)
 	}
 }
