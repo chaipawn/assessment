@@ -75,11 +75,43 @@ func getExpenseById(db *sql.DB) func(echo.Context) error {
 	}
 }
 
+func updateExpense(db *sql.DB) func(echo.Context) error {
+	return func(c echo.Context) error {
+		var request UpdateExpenseRequest
+		err := c.Bind(&request)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, ErrorResponse{Message: "Bad request"})
+		}
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, ErrorResponse{Message: fmt.Sprintf("Expense id %s is invalid", c.Param("id"))})
+		}
+
+		command := expense.NewUpdateExpenseCommand(id, request.Title, request.Amount, request.Note, request.Tags)
+		repository := infrastructure.NewExpenseCommandRepository(db)
+		handler := expense.NewUpdateExpenseHandler(repository)
+
+		expenseEntity, err := handler.Handle(command)
+		if err != nil {
+			c.Logger().Error(err)
+			var errorNotFound expense.ErrorExpenseNotFound
+			if errors.As(err, &errorNotFound) {
+				return c.JSON(http.StatusNotFound, ErrorResponse{Message: errorNotFound.Error()})
+			}
+			return c.JSON(http.StatusInternalServerError, ErrorResponse{Message: "Something went wrong"})
+		}
+		response := NewUpdateExpenseResponse(*expenseEntity)
+
+		return c.JSON(http.StatusOK, response)
+	}
+}
+
 func NewExpenseAPI(address string, db *sql.DB) ExpenseAPI {
 	e := echo.New()
 
 	e.POST("/expenses", createExpense(db))
 	e.GET("/expenses/:id", getExpenseById(db))
+	e.PUT("/expenses/:id", updateExpense(db))
 
 	return ExpenseAPI{app: e, Address: address}
 }
