@@ -31,7 +31,7 @@ func createExpense(db *sql.DB) func(echo.Context) error {
 		var request CreateExpenseRequest
 		err := c.Bind(&request)
 		if err != nil {
-			return c.String(http.StatusBadRequest, "bad request")
+			return c.JSON(http.StatusBadRequest, ErrorResponse{Message: "Bad request"})
 		}
 
 		command := expense.NewAddExpenseCommand(request.Title, request.Amount, request.Note, request.Tags)
@@ -40,7 +40,7 @@ func createExpense(db *sql.DB) func(echo.Context) error {
 
 		expenseEntity, err := handler.Handle(command)
 		if err != nil {
-			return c.String(http.StatusInternalServerError, "internal server error")
+			return c.JSON(http.StatusInternalServerError, ErrorResponse{Message: "Something went wrong"})
 		}
 		response := NewCreateExpenseRespons(*expenseEntity)
 
