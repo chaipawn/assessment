@@ -131,10 +131,10 @@ func getAllExpense(db *sql.DB) func(echo.Context) error {
 func NewExpenseAPI(address string, db *sql.DB) ExpenseAPI {
 	e := echo.New()
 
-	e.GET("/expenses", getAllExpense(db))
-	e.POST("/expenses", createExpense(db))
-	e.GET("/expenses/:id", getExpenseById(db))
-	e.PUT("/expenses/:id", updateExpense(db))
+	e.GET("/expenses", Authorize(getAllExpense(db)))
+	e.POST("/expenses", Authorize(createExpense(db)))
+	e.GET("/expenses/:id", Authorize(getExpenseById(db)))
+	e.PUT("/expenses/:id", Authorize(updateExpense(db)))
 
 	return ExpenseAPI{app: e, Address: address}
 }
