@@ -31,6 +31,7 @@ func (r *response) Decode(v interface{}) error {
 func request(method, url string, body io.Reader) *response {
 	req, _ := http.NewRequest(method, url, body)
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "November 10, 2009")
 	client := http.Client{}
 	res, err := client.Do(req)
 	return &response{res, err}
